@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casa de Festas Ulabum — Painel Comercial do Buffet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#FAF8F2; --card:#FFFFFF; --border:#E5E7EB; --text:#111827; --muted:#6B7280;
+  --green:#c6cf9f; --olive:#e4e8d1; --mid:#abb86f; --orange:#F26B1D; --yellow:#F4C430; --darkgreen:#859442;
+  --g900:#545e26; --g50:#eaedd8; --gap:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font-family:'Inter',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+#app{max-width:1320px;margin:0 auto;padding:24px}
+
+/* ---------- cabeçalho ---------- */
+.header{background:linear-gradient(120deg,var(--g900) 0%,var(--darkgreen) 45%,var(--green) 100%);
+  border-radius:16px;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px;box-shadow:0 2px 8px rgba(84,94,38,.18);margin-bottom:var(--gap)}
+.brand{display:flex;align-items:center;gap:16px}
+.brand-icon{width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.brand-sub{font-size:13px;color:rgba(255,255,255,.85);font-weight:500}
+.brand-title{font-size:28px;font-weight:800;letter-spacing:-.5px;color:#fff;line-height:1.15}
+.upd{font-size:12px;color:rgba(255,255,255,.9);font-weight:500}
+.hctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pill{background:rgba(255,255,255,.95);color:var(--g900);padding:9px 18px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+select{background:#fff;border:1px solid var(--border);padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit}
+
+/* ---------- barra de filtros ---------- */
+.filterbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:34px;margin-bottom:var(--gap)}
+.hint{font-size:12.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--g50);color:var(--g900);border:1px solid var(--mid);
+  padding:5px 8px 5px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
+.chip button{border:none;background:var(--darkgreen);color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;line-height:18px;font-weight:700}
+.btn-clear{border:1px solid var(--border);background:#fff;color:var(--text);padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-clear:hover{border-color:var(--mid)}
+
+/* ---------- grade em "parede de tijolos" ---------- */
+.row{display:grid;gap:var(--gap);margin-bottom:var(--gap)}
+.r-kpi{grid-template-columns:repeat(4,minmax(0,1fr))}
+.r-2{grid-template-columns:minmax(0,3fr) minmax(0,1fr)}
+.r-3{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:auto auto}
+.r-3 .c-map{grid-row:1 / span 2}
+.r-4{grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr)}
+.r-5{grid-template-columns:repeat(3,minmax(0,1fr))}
+.row:last-child{margin-bottom:0}
+@media (max-width:1000px){
+  .r-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .r-2,.r-3,.r-4,.r-5{grid-template-columns:minmax(0,1fr)}
+  .r-3{grid-template-rows:none}.r-3 .c-map{grid-row:auto}
+  .brand-title{font-size:22px}
+}
+@media (max-width:560px){ .r-kpi{grid-template-columns:minmax(0,1fr)} #app{padding:12px} }
+
+/* ---------- cartões ---------- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03);
+  display:flex;flex-direction:column;min-width:0}
+.card h3{font-size:16px;font-weight:700;margin-bottom:2px}
+.card .sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.grow{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.grow.top{justify-content:flex-start;gap:14px}
+.kpi{position:relative;overflow:hidden}
+.kpi-bar{position:absolute;top:0;left:20px;right:20px;height:4px;border-radius:0 0 4px 4px}
+.kpi-title{font-size:13px;color:var(--muted);font-weight:500;margin-top:4px}
+.kpi-val{font-size:32px;font-weight:800;letter-spacing:-1px;margin:6px 0 10px}
+.badge{display:inline-block;align-self:flex-start;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:600;margin-bottom:14px;background:var(--g50);color:var(--g900)}
+.kpi-div{border-top:1px solid #F3F4F6;padding-top:10px;margin-top:auto}
+.kpi-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:4px}
+.kpi-row strong{color:var(--text);font-weight:700}
+
+/* barras/listas */
+.bar-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:5px;gap:8px}
+.track{width:100%;height:10px;background:#F3F4F6;border-radius:999px;overflow:hidden;position:relative}
+.fill{height:100%;border-radius:999px}
+.over{position:absolute;top:0;left:0;height:100%;border-radius:999px}
+.muted{color:var(--muted)}
+.price{background:var(--g50);color:var(--g900);font-weight:700;font-size:12.5px;padding:5px 12px;border-radius:999px;white-space:nowrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;padding:8px 6px;border-bottom:1px solid var(--border)}
+td{padding:12px 6px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+tr.total td{border-top:2px solid var(--border);border-bottom:none;font-weight:700}
+.num{text-align:right!important;font-variant-numeric:tabular-nums}.bold{font-weight:700}
+.neg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F3F4F6}
+.neg-name{font-size:13.5px;font-weight:600}.neg-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+
+/* interatividade (estilo Power BI) */
+[data-dim]{cursor:pointer}
+.clk{border-radius:8px;padding:6px 8px;margin:0 -8px;transition:background .12s,opacity .12s}
+.clk:hover{background:#f4f5ed}
+.clk.sel{background:var(--g50);box-shadow:inset 0 0 0 1.5px var(--mid)}
+.clk.dim{opacity:.45}
+tr[data-dim]:hover td{background:#f4f5ed}
+tr.sel td{background:var(--g50)}
+tr.dim td{opacity:.5}
+.hit{fill:transparent}.hit:hover{fill:rgba(198,207,159,.30)}
+.slice{transition:opacity .12s}
+svg text{font-family:'Inter',sans-serif}
+.ax{font-size:11px;fill:#6B7280}
+.legend{display:flex;gap:18px;justify-content:center;font-size:12.5px;margin-top:6px;flex-wrap:wrap}
+.seg{display:inline-flex;background:#F3F4F6;border-radius:999px;padding:3px;margin-bottom:12px;align-self:flex-start}
+.seg button{border:none;background:transparent;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit}
+.seg button.on{background:#fff;color:var(--g900);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+#map{flex:1;min-height:560px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#f0f2e6}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+#tip{position:fixed;display:none;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;
+  font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.12);pointer-events:none;max-width:260px;line-height:1.45}
+.leaflet-container{font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="brand"><div class="brand-icon">🎉</div>
+      <div><div class="brand-sub">Casa de Festas Ulabum</div><div class="brand-title">Painel Comercial do Buffet</div></div></div>
+    <div class="hctl"><span class="upd" id="upd"></span><span class="pill" id="pill"></span><select id="selAno" aria-label="Período"></select></div>
+  </div>
+  <div class="filterbar" id="filterbar"></div>
+
+  <div class="row r-kpi" id="kpis"></div>
+
+  <div class="row r-2">
+    <section class="card"><h3>Evolução de Leads, Clientes e Receita</h3><div class="sub">Por ano do evento · clique em um ano para filtrar</div><div id="evol" class="grow"></div></section>
+    <section class="card"><h3>Status de Leads</h3><div class="sub">Situação atual de todos os leads do período</div><div id="status" class="grow"></div></section>
+  </div>
+
+  <div class="row r-3">
+    <section class="card c-map"><h3>Mapa de Vendas por Localidade</h3><div class="sub">Cada bolha é um bairro/cidade · clique em uma bolha para filtrar</div>
+      <div class="seg" id="seg"><button data-metric="receita" class="on">Receita fechada</button><button data-metric="leads">Leads</button><button data-metric="fechados">Eventos fechados</button></div>
+      <div id="map"></div><div class="note" id="mapnote"></div></section>
+    <section class="card"><h3>Receita por Região</h3><div class="sub">Eventos fechados, da maior para a menor receita</div><div id="regiao" class="grow"></div></section>
+    <section class="card"><h3>Formas de Pagamento</h3><div class="sub">Eventos fechados por meio de pagamento</div><div id="pagto" class="grow"></div></section>
+  </div>
+
+  <div class="row r-4">
+    <section class="card"><h3>Temas Mais Pedidos</h3><div class="sub">Leads com tema escolhido</div><div id="temas" class="grow"></div></section>
+    <section class="card"><h3>Desempenho por Tipo de Evento</h3><div class="sub">Ordenado por receita · convidados médios por evento fechado (adultos / crianças)</div><div id="tipo" class="grow"></div></section>
+    <section class="card"><h3>Distribuição de Cardápios</h3><div class="sub">Eventos fechados por cardápio</div><div id="cardapio" class="grow"></div></section>
+  </div>
+
+  <div class="row r-5">
+    <section class="card"><h3>Ranking de Vendedores</h3><div class="sub">Receita fechada, leads atendidos e conversão</div><div id="vend" class="grow"></div></section>
+    <section class="card"><h3>Canais de Marketing</h3><div class="sub">Leads por canal de origem e taxa de conversão</div><div id="mkt" class="grow"></div></section>
+    <section class="card"><h3>Negociações em Aberto</h3><div class="sub">Leads mais recentes ainda em negociação, para follow-up</div><div id="neg" class="grow"></div></section>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+const D = __DADOS_JSON__;
+const ROWS = D.rows, LOCS = D.locs;
+
+/* ================= constantes ================= */
+const C = {green:'#c6cf9f', olive:'#e4e8d1', mid:'#abb86f', orange:'#F26B1D', yellow:'#F4C430', dark:'#859442', g900:'#545e26', g50:'#eaedd8', muted:'#6B7280'};
+const CLI='Tornou-se cliente', NEG='Em negociação', DES='Desistência';
+const DIMS = {ano:'a', tipo:'t', status:'s', pag:'p', card:'k', tema:'h', mkt:'m', vend:'vd', local:'l', regiao:'rg'};
+const LABEL = {ano:'Ano', tipo:'Tipo', status:'Status', pag:'Pagamento', card:'Cardápio', tema:'Tema', mkt:'Canal', vend:'Vendedor', local:'Local', regiao:'Região'};
+const STATUS_NOME = {[CLI]:'Tornaram-se clientes', [NEG]:'Em negociação', [DES]:'Desistências'};
+const F = {};                       // filtros ativos: dimensão -> valor (texto)
+let mapMetric = 'receita';
+const SKEY = 'ulabum_painel_v1';
+const ANOS = [...new Set(ROWS.map(r => r.a))].sort((a,b) => a-b);
+
+/* ===== guarda filtros/zoom para não perdê-los quando os dados se atualizam sozinhos ===== */
+function saveState(){ try{ const v = MAP ? {lat:MAP.getCenter().lat, lng:MAP.getCenter().lng, z:MAP.getZoom()} : null;
+  sessionStorage.setItem(SKEY, JSON.stringify({F, mapMetric, v})); }catch(e){} }
+function loadState(){ try{ const s = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); if(!s) return null;
+  Object.keys(s.F || {}).forEach(k => { if(DIMS[k]) F[k] = String(s.F[k]); }); if(s.mapMetric) mapMetric = s.mapMetric; return s.v || null; }catch(e){ return null; } }
+
+/* ================= utilidades ================= */
+const fmtInt = n => Math.round(n||0).toLocaleString('pt-BR');
+const fmtMoeda = n => 'R$ ' + fmtInt(n);
+const fmtPct = n => (n||0).toFixed(1).replace('.', ',') + '%';
+const fmtK = v => v>=1e6 ? 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi'
+                : v>=1e3 ? 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil' : 'R$ '+fmtInt(v);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum = (a,f) => a.reduce((s,x) => s + (+f(x)||0), 0);
+const by = (rows, key) => { const m = new Map(); rows.forEach(r => { const k = r[key]; if(k==null) return; (m.get(k) || m.set(k,[]).get(k)).push(r); }); return m; };
+const isCli = r => r.s === CLI;
+const niceStep = x => { const p = Math.pow(10, Math.floor(Math.log10(x))); const f = x/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; };
+const dataBR = d => d ? d.split('-').reverse().join('/') : '';
+const tipAttr = html => `data-tip="${esc(html)}"`;
+
+/* seleciona linhas aplicando TODOS os filtros, exceto o da própria dimensão do visual (estilo Power BI) */
+function sel(exclude){
+  const ks = Object.keys(F).filter(d => d !== exclude);
+  return ROWS.filter(r => ks.every(d => String(r[DIMS[d]]) === F[d]));
+}
+/* classes de realce: selecionado / esmaecido */
+function st(dim, val){
+  if(F[dim] === undefined) return '';
+  return String(F[dim]) === String(val) ? ' sel' : ' dim';
+}
+const dv = (dim, val) => `data-dim="${dim}" data-val="${esc(val)}"`;
+
+/* listas curtas ficam no topo; listas longas se distribuem pelo cartão */
+function compact(id, n, min){ document.getElementById(id).classList.toggle('top', n < min); }
+
+/* ================= KPIs ================= */
+function renderKpis(){
+  const b = sel(null), cli = b.filter(isCli), neg = b.filter(r => r.s===NEG), des = b.filter(r => r.s===DES);
+  const rec = sum(cli, r => r.v), custo = sum(cli, r => r.c), vneg = sum(neg, r => r.v), lucro = rec - custo;
+  const marg = rec ? lucro/rec*100 : 0, conv = b.length ? cli.length/b.length*100 : 0, tk = cli.length ? rec/cli.length : 0;
+  const ad = sum(cli, r => r.ad), cr = sum(cli, r => r.cr), cpe = cli.length ? (ad+cr)/cli.length : 0;
+  const k = (cor, t, v, badge) => `<div class="card kpi"><div class="kpi-bar" style="background:${cor}"></div>
+    <div class="kpi-title">${t}</div><div class="kpi-val">${v}</div><div class="badge" style="margin-bottom:0">${badge}</div></div>`;
+  document.getElementById('kpis').innerHTML =
+    k(C.g900, 'Receita Fechada', fmtMoeda(rec), fmtInt(cli.length)+' eventos fechados') +
+    k(C.dark, 'Lucro Bruto', fmtMoeda(lucro), fmtPct(marg)+' de margem') +
+    k(C.mid, 'Taxa de Conversão', fmtPct(conv), fmtInt(b.length)+' leads recebidos') +
+    k(C.green, 'Ticket Médio', fmtMoeda(tk), fmtInt(cpe)+' convidados por evento');
+  document.getElementById('pill').textContent = fmtInt(b.length) + ' leads no período';
+  document.getElementById('upd').textContent = D.gerado ? '🔄 Dados de ' + D.gerado : '';
+}
+
+/* ================= Evolução (SVG) ================= */
+function smooth(p){
+  if(p.length < 2) return '';
+  let d = `M${p[0][0]},${p[0][1]}`;
+  for(let i=0;i<p.length-1;i++){
+    const p0=p[i-1]||p[i], p1=p[i], p2=p[i+1], p3=p[i+2]||p2, t=.18;
+    d += `C${p1[0]+(p2[0]-p0[0])*t},${p1[1]+(p2[1]-p0[1])*t} ${p2[0]-(p3[0]-p1[0])*t},${p2[1]-(p3[1]-p1[1])*t} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+const rrTop = (x,y,w,h,r) => { r=Math.min(r,w/2,h); return h<=0 ? '' : `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`; };
+
+function renderEvol(){
+  const el = document.getElementById('evol'), b = sel('ano');
+  const g = by(b, 'a');
+  const data = ANOS.map(a => { const rs = g.get(a)||[], cl = rs.filter(isCli); return {ano:a, leads:rs.length, cli:cl.length, rec:sum(cl, r=>r.v)}; });
+  const W = Math.max(320, el.clientWidth || 700), H = 330, m = {l:46, r:80, t:12, b:30}, pw = W-m.l-m.r, ph = H-m.t-m.b;
+  const band = pw/Math.max(1,data.length);
+  const mxL = 4*niceStep(Math.max(1, ...data.map(d=>d.leads))/4), mxR = 4*niceStep(Math.max(1, ...data.map(d=>d.rec))/4);
+  const yL = v => m.t+ph-(v/mxL)*ph, yR = v => m.t+ph-(v/mxR)*ph;
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  for(let i=0;i<=4;i++){
+    const gy = m.t+ph-i*ph/4;
+    s += `<line x1="${m.l}" x2="${W-m.r}" y1="${gy}" y2="${gy}" stroke="#F3F4F6"/>
+      <text class="ax" x="${m.l-8}" y="${gy+4}" text-anchor="end">${fmtInt(i*mxL/4)}</text>
+      <text class="ax" x="${W-m.r+8}" y="${gy+4}">${fmtK(i*mxR/4)}</text>`;
+  }
+  const bw = Math.min(26, band*.3), pts = [];
+  data.forEach((d,i) => {
+    const cx = m.l+band*(i+.5), op = F.ano !== undefined && String(d.ano) !== F.ano ? .3 : 1;
+    s += `<path d="${rrTop(cx-bw-1, yL(d.leads), bw, m.t+ph-yL(d.leads), 4)}" fill="${C.green}" opacity="${op}"/>`;
+    s += `<path d="${rrTop(cx+1, yL(d.cli), bw, m.t+ph-yL(d.cli), 4)}" fill="${C.dark}" opacity="${op}"/>`;
+    pts.push([cx, yR(d.rec), op]);
+    s += `<text class="ax" x="${cx}" y="${H-8}" text-anchor="middle" style="font-weight:${op===1&&F.ano!==undefined?700:500}">${d.ano}</text>`;
+  });
+  s += `<path d="${smooth(pts)}" fill="none" stroke="${C.orange}" stroke-width="2.5"/>`;
+  pts.forEach(p => s += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${C.orange}" stroke="#fff" stroke-width="1.5" opacity="${p[2]}"/>`);
+  data.forEach((d,i) => {
+    const tip = `<b>${d.ano}</b><br>Leads: ${fmtInt(d.leads)}<br>Clientes: ${fmtInt(d.cli)}<br>Receita: ${fmtMoeda(d.rec)}`;
+    s += `<rect class="hit" ${dv('ano', d.ano)} ${tipAttr(tip)} x="${m.l+band*i}" y="${m.t}" width="${band}" height="${ph+m.b}"/>`;
+  });
+  s += '</svg>';
+  el.innerHTML = s + `<div class="legend"><span><i class="dot" style="background:${C.green}"></i>Leads</span>
+    <span><i class="dot" style="background:${C.dark}"></i>Clientes</span><span><i class="dot" style="background:${C.orange}"></i>Receita (R$)</span></div>`;
+}
+
+/* ================= Status de leads ================= */
+function renderStatus(){
+  const b = sel('status'), n = b.length;
+  const cnt = s => b.filter(r => r.s === s).length;
+  const itens = [['Leads recebidos', n, C.green, null], [STATUS_NOME[CLI], cnt(CLI), C.dark, CLI], [STATUS_NOME[NEG], cnt(NEG), C.yellow, NEG], [STATUS_NOME[DES], cnt(DES), C.orange, DES]];
+  const html = itens.map(([nome, q, cor, key]) => {
+    const p = n ? q/n*100 : 0;
+    return `<div class="${key?'clk'+st('status',key):''}" ${key?dv('status',key):''}>
+      <div class="bar-head"><span>${nome}</span><span>${fmtInt(q)} · <strong>${fmtPct(p)}</strong></span></div>
+      <div class="track" style="height:14px"><div class="fill" style="width:${p}%;background:${cor}"></div></div></div>`;
+  }).join('');
+  const vneg = sum(b.filter(r => r.s===NEG), r => r.v), conv = n ? cnt(CLI)/n*100 : 0;
+  document.getElementById('status').innerHTML = `<div style="flex:1;display:flex;flex-direction:column;justify-content:space-evenly;gap:8px">${html}</div>` +
+    `<div class="kpi-div"><div class="kpi-row"><span>Valor em negociação</span><strong>${fmtMoeda(vneg)}</strong></div>
+     <div class="kpi-row"><span>Taxa de conversão</span><strong>${fmtPct(conv)}</strong></div></div>`;
+}
+
+/* ================= Mapa (Leaflet) ================= */
+let MAP = null, LAYER = null;
+function initMap(view){
+  const box = document.getElementById('map');
+  if(typeof L === 'undefined'){ box.innerHTML = '<div class="empty">Mapa indisponível: não foi possível carregar a biblioteca de mapas (cdnjs.cloudflare.com).</div>'; return; }
+  const lat = ROWS.map(r => LOCS[r.l] && LOCS[r.l].lat).filter(x => x!=null).sort((a,b)=>a-b);
+  const lon = ROWS.map(r => LOCS[r.l] && LOCS[r.l].lon).filter(x => x!=null).sort((a,b)=>a-b);
+  const mid = a => a.length ? a[Math.floor(a.length/2)] : -23.6;
+  MAP = L.map('map', {scrollWheelZoom:false, zoomSnap:.25, zoomControl:true}).setView(view ? [view.lat, view.lng] : [mid(lat), mid(lon)], view ? view.z : 10);
+  MAP.on('moveend', saveState);
+  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  const base = L.tileLayer(ESRI + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {maxZoom:18, maxNativeZoom:16, attribution:'Tiles © Esri — Esri, DeLorme, NAVTEQ'});
+  const rotulos = L.tileLayer(ESRI + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {maxZoom:18, maxNativeZoom:16});
+  const claro = L.layerGroup([base, rotulos]).addTo(MAP);
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'});
+  L.control.layers({'Mapa claro': claro, 'Ruas (OpenStreetMap)': osm}, null, {collapsed:true, position:'topright'}).addTo(MAP);
+  // plano B: se a base clara não carregar nenhum bloco, troca sozinho para o OpenStreetMap
+  let okT = 0, badT = 0, trocou = false;
+  base.on('tileload', () => okT++);
+  base.on('tileerror', () => { badT++; if(okT === 0 && badT >= 4 && !trocou){ trocou = true; MAP.removeLayer(claro); osm.addTo(MAP); } });
+  LAYER = L.layerGroup().addTo(MAP);
+  MAP.on('click', () => MAP.scrollWheelZoom.enable());
+  box.addEventListener('mouseleave', () => MAP.scrollWheelZoom.disable());
+}
+function renderMap(){
+  const NOMES = {receita:'receita fechada', leads:'leads', fechados:'eventos fechados'};
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.metric === mapMetric));
+  document.getElementById('mapnote').textContent = `Tamanho da bolha = ${NOMES[mapMetric]}. Passe o mouse para ver os detalhes; use o scroll (após clicar no mapa) para dar zoom.`;
+  if(!MAP) return;
+  const b = sel('local'), agg = [];
+  by(b, 'l').forEach((rs, key) => {
+    const loc = LOCS[key]; if(!loc) return;
+    const cl = rs.filter(isCli);
+    agg.push({key, loc, leads:rs.length, fechados:cl.length, receita:sum(cl, r=>r.v)});
+  });
+  const items = agg.filter(a => a[mapMetric] > 0).sort((a,b2) => b2[mapMetric]-a[mapMetric]);   // maiores primeiro => menores por cima
+  LAYER.clearLayers();
+  const mx = Math.max(1, ...items.map(a => a[mapMetric])), has = F.local !== undefined;
+  items.forEach(a => {
+    const isSel = has && F.local === a.key;
+    const mk = L.circleMarker([a.loc.lat, a.loc.lon], {
+      radius: 7 + 33*Math.sqrt(a[mapMetric]/mx),
+      color: isSel ? C.g900 : C.dark, weight: isSel ? 3 : 1.5, opacity: has && !isSel ? .45 : .9,
+      fillColor: C.mid, fillOpacity: isSel ? .6 : (has ? .12 : .35)
+    }).addTo(LAYER);
+    mk.bindTooltip(`<b>${esc(a.loc.bairro)}, ${esc(a.loc.cidade)}</b><br>Região: ${esc(a.loc.regiao)}<br>Leads: ${fmtInt(a.leads)}<br>Eventos fechados: ${fmtInt(a.fechados)}<br>Receita: ${fmtMoeda(a.receita)}`, {sticky:true});
+    mk.on('click', ev => { if(ev.originalEvent) ev.originalEvent.stopPropagation(); toggle('local', a.key); });
+  });
+}
+
+/* ================= Receita por região / Pagamento ================= */
+function renderRegiao(){
+  const rows = sel('regiao').filter(isCli), out = [];
+  by(rows, 'rg').forEach((rs, k) => out.push({k, rec:sum(rs, r=>r.v), n:rs.length}));
+  out.sort((a,b) => b.rec-a.rec); const top = out.slice(0,6), mx = top.length ? top[0].rec : 1;
+  compact('regiao', top.length, 5);
+  document.getElementById('regiao').innerHTML = top.length ? top.map(o =>
+    `<div class="clk${st('regiao',o.k)}" ${dv('regiao',o.k)}>
+      <div class="bar-head" style="margin-bottom:4px"><span><strong>${esc(o.k)}</strong> <span class="muted" style="font-size:12px">· ${fmtInt(o.n)} eventos</span></span><span class="price">${fmtMoeda(o.rec)}</span></div>
+      <div class="track" style="height:6px"><div class="fill" style="width:${mx?o.rec/mx*100:0}%;background:${C.green}"></div></div></div>`).join('')
+    : '<div class="empty">Sem dados para este filtro.</div>';
+}
+function renderPagto(){
+  const rows = sel('pag').filter(isCli), tot = rows.length;
+  const defs = [['Pix', C.dark], ['Cartão de crédito', C.mid], ['Cartão de débito', C.green]];
+  const it = defs.map(([n,c]) => { const rs = rows.filter(r => r.p === n); return {n, c, q:rs.length, v:sum(rs, r=>r.v)}; });
+  const barra = it.map(o => `<div class="${'slice'}" ${dv('pag',o.n)} ${tipAttr(`<b>${o.n}</b><br>${fmtInt(o.q)} eventos`)} style="width:${tot?o.q/tot*100:0}%;background:${o.c};height:100%;opacity:${F.pag===undefined||F.pag===o.n?1:.35}"></div>`).join('');
+  document.getElementById('pagto').innerHTML =
+    `<div style="display:flex;height:16px;border-radius:999px;overflow:hidden;background:#F3F4F6">${barra}</div>` +
+    it.map(o => `<div class="clk${st('pag',o.n)}" ${dv('pag',o.n)} style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+      <span><i class="dot" style="background:${o.c}"></i>${o.n}<br><span class="muted" style="font-size:11.5px;margin-left:18px">${fmtInt(o.q)} eventos · <strong style="color:var(--text)">${fmtPct(tot?o.q/tot*100:0)}</strong></span></span>
+      <span class="price">${fmtMoeda(o.v)}</span></div>`).join('');
+}
+
+/* ================= Temas / Tipo / Cardápio ================= */
+function renderTemas(){
+  const rows = sel('tema').filter(r => r.h != null), out = [];
+  by(rows, 'h').forEach((rs,k) => out.push([k, rs.length])); out.sort((a,b) => b[1]-a[1]);
+  const mx = out.length ? out[0][1] : 1;
+  compact('temas', out.length, 8);
+  document.getElementById('temas').innerHTML = out.length ? out.map(([k,q]) =>
+    `<div class="clk${st('tema',k)}" ${dv('tema',k)} style="display:flex;align-items:center;gap:8px;font-size:12.5px">
+      <div style="width:104px;text-align:right" class="muted">${esc(k)}</div>
+      <div class="track" style="flex:1;height:14px"><div class="fill" style="width:${q/mx*100}%;background:${C.green}"></div></div>
+      <div style="width:30px;font-weight:700">${q}</div></div>`).join('') : '<div class="empty">Sem dados para este filtro.</div>';
+}
+function renderTipo(){
+  const b = sel('tipo'), out = [];
+  by(b, 't').forEach((rs,k) => { const cl = rs.filter(isCli); out.push({k, leads:rs.length, cli:cl.length, rec:sum(cl,r=>r.v), ad:sum(cl,r=>r.ad), cr:sum(cl,r=>r.cr)}); });
+  out.sort((a,b2) => b2.rec-a.rec);
+  const cliT = b.filter(isCli);
+  const linhas = out.map(o => {
+    const mad = o.cli ? Math.round(o.ad/o.cli) : 0, mcr = o.cli ? Math.round(o.cr/o.cli) : 0, pad = (mad+mcr) ? mad/(mad+mcr)*100 : 50;
+    return `<tr class="${st('tipo',o.k).trim()}" ${dv('tipo',o.k)}><td class="bold">${esc(o.k)}</td><td class="num">${fmtInt(o.leads)}</td>
+      <td class="num bold">${fmtPct(o.leads?o.cli/o.leads*100:0)}</td><td class="num">${fmtMoeda(o.rec)}</td>
+      <td style="padding-left:16px"><div style="display:flex;align-items:center;gap:8px"><div class="track" style="width:90px;height:7px;background:${C.olive}"><div class="fill" style="width:${pad}%;background:${C.dark}"></div></div>
+      <span class="muted" style="font-size:12px">${mad} / ${mcr}</span></div></td></tr>`;
+  }).join('');
+  document.getElementById('tipo').innerHTML = out.length ? `<table><thead><tr><th>Tipo</th><th class="num">Leads</th><th class="num">Conversão</th><th class="num">Receita</th><th style="padding-left:16px">Adultos / Crianças</th></tr></thead>
+    <tbody>${linhas}<tr class="total"><td>Total</td><td class="num">${fmtInt(b.length)}</td><td class="num">${fmtPct(b.length?cliT.length/b.length*100:0)}</td><td class="num">${fmtMoeda(sum(cliT,r=>r.v))}</td><td></td></tr></tbody></table>`
+    : '<div class="empty">Sem dados para este filtro.</div>';
+}
+function renderCardapio(){
+  const rows = sel('card').filter(isCli), tot = rows.length;
+  const defs = [['Ouro', C.g900], ['Prata', C.dark], ['Bronze', C.mid], ['Escolar', C.green]];
+  const it = defs.map(([n,c]) => { const rs = rows.filter(r => r.k === n); return {n, c, q:rs.length, v:sum(rs, r=>r.v)}; }).sort((a,b) => b.q-a.q);
+  const S = 200, c0 = S/2, R = 78, sw = 26, CIR = 2*Math.PI*R; let off = 0;
+  let svg = `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="display:block;margin:0 auto"><circle cx="${c0}" cy="${c0}" r="${R}" fill="none" stroke="#F3F4F6" stroke-width="${sw}"/>`;
+  it.forEach(o => {
+    const len = tot ? o.q/tot*CIR : 0; if(len <= 0) return;
+    svg += `<circle class="slice" ${dv('card',o.n)} ${tipAttr(`<b>${o.n}</b><br>${fmtInt(o.q)} eventos · ${fmtPct(o.q/tot*100)}`)} cx="${c0}" cy="${c0}" r="${R}" fill="none" stroke="${o.c}" stroke-width="${sw}"
+      stroke-dasharray="${Math.max(.1,len-1.5)} ${CIR-Math.max(.1,len-1.5)}" stroke-dashoffset="${-off}" transform="rotate(-90 ${c0} ${c0})" style="opacity:${F.card===undefined||F.card===o.n?1:.3}"/>`;
+    off += len;
+  });
+  svg += `<text x="${c0}" y="${c0+4}" text-anchor="middle" font-size="26" font-weight="800" fill="#111827" pointer-events="none">${fmtInt(tot)}</text>
+          <text x="${c0}" y="${c0+22}" text-anchor="middle" font-size="12" fill="#6B7280" pointer-events="none">eventos</text></svg>`;
+  document.getElementById('cardapio').innerHTML = svg + `<div style="display:flex;flex-direction:column;gap:8px">` + it.map(o =>
+    `<div class="clk${st('card',o.n)}" ${dv('card',o.n)}><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600"><span><i class="dot" style="background:${o.c}"></i>${o.n}</span><span>${fmtPct(tot?o.q/tot*100:0)}</span></div>
+     <div class="muted" style="font-size:11.5px;margin-left:18px">${fmtInt(o.q)} eventos · ${fmtMoeda(o.v)}</div></div>`).join('') + '</div>';
+}
+
+/* ================= Vendedores / Marketing / Negociações ================= */
+function renderVend(){
+  const b = sel('vend'), out = [];
+  by(b, 'vd').forEach((rs,k) => { const cl = rs.filter(isCli); out.push({k, leads:rs.length, cli:cl.length, rec:sum(cl,r=>r.v)}); });
+  out.sort((a,b2) => b2.rec-a.rec); const top = out.slice(0,10), mx = top.length ? top[0].rec : 1;
+  document.getElementById('vend').innerHTML = top.length ? `<table><thead><tr><th>Vendedor</th><th>Receita</th><th class="num">Leads</th><th class="num">Conv.</th></tr></thead><tbody>` +
+    top.map(o => `<tr class="${st('vend',o.k).trim()}" ${dv('vend',o.k)}><td class="bold">${esc(o.k)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="track" style="width:60px;height:7px;flex:none"><div class="fill" style="width:${mx?o.rec/mx*100:0}%;background:${C.green}"></div></div><span>${fmtMoeda(o.rec)}</span></div></td>
+      <td class="num">${fmtInt(o.leads)}</td><td class="num bold">${fmtPct(o.leads?o.cli/o.leads*100:0)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">Sem dados para este filtro.</div>';
+}
+function renderMkt(){
+  const b = sel('mkt'), out = [];
+  by(b, 'm').forEach((rs,k) => out.push({k, leads:rs.length, cli:rs.filter(isCli).length})); out.sort((a,b2) => b2.leads-a.leads);
+  const mx = out.length ? out[0].leads : 1;
+  compact('mkt', out.length, 8);
+  document.getElementById('mkt').innerHTML = out.length ? out.map(o =>
+    `<div class="clk${st('mkt',o.k)}" ${dv('mkt',o.k)}><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="font-weight:500">${esc(o.k)}</span>
+      <span>${o.leads} · <strong style="color:var(--g900)">${fmtPct(o.leads?o.cli/o.leads*100:0)}</strong></span></div>
+      <div class="track" style="height:8px"><div class="fill" style="width:${o.leads/mx*100}%;background:${C.green}"></div><div class="over" style="width:${o.cli/mx*100}%;background:${C.dark}"></div></div></div>`).join('')
+    : '<div class="empty">Sem dados para este filtro.</div>';
+}
+function renderNeg(){
+  const rs = sel(null).filter(r => r.s === NEG).sort((a,b) => String(b.d).localeCompare(String(a.d))).slice(0,7);
+  document.getElementById('neg').innerHTML = rs.length ? '<div>' + rs.map(r =>
+    `<div class="neg"><div><div class="neg-name">${esc(r.n)}</div><div class="neg-meta">${esc(r.t)} · ${dataBR(r.d)} · ${esc(r.vd)} · via ${esc(r.m)}</div></div><span class="price">${fmtMoeda(r.v||0)}</span></div>`).join('') + '</div>'
+    : '<div class="empty">Nenhuma negociação em aberto neste filtro.</div>';
+}
+
+/* ================= filtros / cabeçalho ================= */
+function renderFilterbar(){
+  const ks = Object.keys(F), fb = document.getElementById('filterbar');
+  fb.innerHTML = ks.length
+    ? ks.map(d => `<span class="chip">${LABEL[d]}: ${esc(F[d])}<button data-clear="${d}" title="Remover filtro">✕</button></span>`).join('') + `<button class="btn-clear" data-clear="*">Limpar filtros</button>`
+    : `<span class="hint">💡 Clique em uma barra, bolha, linha ou fatia para filtrar todo o painel. Clique novamente para remover o filtro.</span>`;
+  document.getElementById('selAno').value = F.ano === undefined ? 'TODOS' : F.ano;
+}
+function toggle(dim, val){ val = String(val); if(F[dim] === val) delete F[dim]; else F[dim] = val; render(); }
+
+function fit(){ try{ const fe = window.frameElement; if(fe) fe.style.height = (document.getElementById('app').offsetHeight + 4) + 'px'; }catch(e){} }
+function render(){
+  renderFilterbar(); renderKpis(); renderEvol(); renderStatus(); renderMap(); renderRegiao(); renderPagto();
+  renderTemas(); renderTipo(); renderCardapio(); renderVend(); renderMkt(); renderNeg();
+  if(MAP) MAP.invalidateSize(); fit(); saveState();
+}
+
+/* ================= eventos ================= */
+const tip = document.getElementById('tip');
+document.addEventListener('mouseover', e => { const t = e.target.closest && e.target.closest('[data-tip]'); if(t){ tip.innerHTML = t.dataset.tip; tip.style.display = 'block'; } else tip.style.display = 'none'; });
+document.addEventListener('mousemove', e => { if(tip.style.display === 'block'){ tip.style.left = Math.max(4, Math.min(e.clientX+14, innerWidth-tip.offsetWidth-8)) + 'px'; tip.style.top = (e.clientY+14) + 'px'; } });
+document.addEventListener('click', e => {
+  const cl = e.target.closest('[data-clear]');
+  if(cl){ if(cl.dataset.clear === '*') Object.keys(F).forEach(k => delete F[k]); else delete F[cl.dataset.clear]; render(); return; }
+  const mt = e.target.closest('[data-metric]');
+  if(mt){ mapMetric = mt.dataset.metric; renderMap(); saveState(); return; }
+  const t = e.target.closest('[data-dim]');
+  if(t) toggle(t.dataset.dim, t.dataset.val);
+});
+
+const selAno = document.getElementById('selAno');
+selAno.innerHTML = '<option value="TODOS">📅 Todos os anos</option>' + ANOS.slice().reverse().map(a => `<option value="${a}">📅 Ano ${a}</option>`).join('');
+selAno.addEventListener('change', () => { if(selAno.value === 'TODOS') delete F.ano; else F.ano = selAno.value; render(); });
+
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+const _view = loadState(); initMap(_view); render();
+</script>
+</body>
+</html>
